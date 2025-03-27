@@ -1,4 +1,4 @@
-from users.permissions import IsCustomer, IsOwner, IsTechnician
+from users.permissions import IsCustomer, IsTechnician
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_yasg import openapi
@@ -29,8 +29,6 @@ class RegisterCustomerView(APIView):
                 "access": str(refresh.access_token),
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-
 class RegisterTechnicianView(APIView):
     permission_classes = [AllowAny]
 
@@ -51,7 +49,6 @@ class RegisterTechnicianView(APIView):
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -72,8 +69,69 @@ class LoginView(APIView):
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class GetTechnicianByIdView(APIView):
+    permission_classes = [IsAuthenticated]
 
-class CustomerProfileView(APIView):
+    @swagger_auto_schema(
+        responses={200: TechnicianSerializer()},
+        security=[{'Bearer': []}] 
+    )
+    def get(self, request, pk):
+        try:
+            user = User.objects.get(id=pk, role="technician")
+            serializer = TechnicianSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except TechnicianProfile.DoesNotExist:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+class GetAllTechniciansView(APIView):
+    permission_classes = [IsAuthenticated]
+    @swagger_auto_schema(
+        responses={200: TechnicianSerializer()},
+        security=[{'Bearer': []}] 
+    )
+    def get(self, request):
+        try:
+            technicians = User.objects.filter(role="technician")
+            serializer = TechnicianSerializer(technicians, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except TechnicianProfile.DoesNotExist:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+class CurrentTechnicianProfileView(APIView):
+    permission_classes = [IsAuthenticated, IsTechnician]
+
+    @swagger_auto_schema(
+        responses={200: TechnicianSerializer()},
+        security=[{'Bearer': []}]
+
+    )
+    def get(self, request):
+        try:
+            serializer = TechnicianSerializer(request.user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except TechnicianProfile.DoesNotExist:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+ 
+    
+    @swagger_auto_schema(
+        request_body=UpdateTechnicianSerializer, 
+        responses={200: TechnicianSerializer()},
+        security=[{'Bearer': []}]
+
+    )
+    def put(self, request):
+        try:
+            serializer = UpdateTechnicianSerializer(request.user, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                new_user = User.objects.get(id=request.user.id)
+                serializer = TechnicianSerializer(new_user)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except TechnicianProfile.DoesNotExist:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+class CurrentCustomerProfileView(APIView):
     permission_classes = [IsAuthenticated, IsCustomer]
 
     @swagger_auto_schema(
@@ -95,41 +153,7 @@ class CustomerProfileView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-class TechnicianProfileView(APIView):
-    permission_classes = [IsAuthenticated, IsTechnician]
-
-    @swagger_auto_schema(
-        responses={200: TechnicianSerializer()},
-        security=[{'Bearer': []}] 
-    )
-    def get(self, request):
-        try:
-            serializer = TechnicianSerializer(request.user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except TechnicianProfile.DoesNotExist:
-            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    @swagger_auto_schema(
-        request_body=UpdateTechnicianSerializer, 
-        responses={200: TechnicianSerializer()},
-        security=[{'Bearer': []}]
-
-    )
-    def put(self, request):
-        try:
-            serializer = UpdateTechnicianSerializer(request.user, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                new_user = User.objects.get(id=request.user.id)
-                serializer = TechnicianSerializer(new_user)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except TechnicianProfile.DoesNotExist:
-            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
-
-
+         
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
