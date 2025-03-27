@@ -6,8 +6,8 @@ from drf_yasg import openapi
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="House Services API",
-        default_version="v1",
+        title="SkillTrade API",
+        default_version="v3",
         description="API documentation for the house service booking system",
         terms_of_service="https://www.example.com/terms/",
         contact=openapi.Contact(email="support@example.com"),
@@ -20,7 +20,7 @@ schema_view = get_schema_view(
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/auth/", include("users.urls")),
-    # path("api/", include("bookings.urls")),
+    path("api/bookings/", include("bookings.urls")),
 
     # Swagger UI
     path("swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),

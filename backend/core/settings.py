@@ -57,6 +57,18 @@ REST_FRAMEWORK = {
     ],
 }
 
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'in': 'header',
+            'name': 'Authorization',
+            'description': 'JWT Authorization header using the Bearer token. Example: "Bearer <token>"'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+}
+
 from datetime import timedelta
 
 SIMPLE_JWT = {

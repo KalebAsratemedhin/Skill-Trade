@@ -1,42 +1,60 @@
+from users.permissions import IsCustomer, IsOwner, IsTechnician
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_yasg import openapi
-from .serializers import UserSerializer, LoginSerializer
+from .serializers import CustomerSerializer, TechnicianSerializer, UpdateCustomerSerializer, UpdateTechnicianSerializer, LoginSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import login, logout
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
-from .models import User
-from rest_framework.permissions import IsAuthenticated
+from .models import User, TechnicianProfile
 
-
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
-
-class RegisterView(APIView):
+class RegisterCustomerView(APIView):
     permission_classes = [AllowAny]
+
     @swagger_auto_schema(
-        request_body=UserSerializer,
-        responses={201: UserSerializer()},
+        request_body=CustomerSerializer,
+        responses={201: CustomerSerializer}
     )
     def post(self, request):
-        print(f"hey ${request.data}")
-        serializer = UserSerializer(data=request.data)
-        print(f"valid ${serializer.is_valid()}")
-
+        serializer = CustomerSerializer(data=request.data)
+        
         if serializer.is_valid():
             user = serializer.save()
-            refresh = RefreshToken.for_user(user)  # Generate JWT tokens
+            refresh = RefreshToken.for_user(user)  
             return Response({
                 "user": serializer.data,
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class RegisterTechnicianView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        request_body=TechnicianSerializer,
+        responses={201: TechnicianSerializer}
+    )
+    def post(self, request):
+        serializer = TechnicianSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            user = serializer.save()
+            refresh = RefreshToken.for_user(user)  
+            return Response({
+                "user": serializer.data,
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
+
     @swagger_auto_schema(
         request_body=LoginSerializer,
         responses={200: openapi.Response("Login successful", LoginSerializer)},
@@ -45,7 +63,7 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             user = User.objects.get(username=serializer.validated_data["username"])
-            refresh = RefreshToken.for_user(user)  # Generate JWT tokens
+            refresh = RefreshToken.for_user(user)  
             return Response({
                 "message": "Login successful",
                 "user": serializer.validated_data,
@@ -53,6 +71,64 @@ class LoginView(APIView):
                 "access": str(refresh.access_token),
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CustomerProfileView(APIView):
+    permission_classes = [IsAuthenticated, IsCustomer]
+
+    @swagger_auto_schema(
+        responses={200: CustomerSerializer()},
+        security=[{'Bearer': []}]
+    )
+    def get(self, request):
+        serializer = CustomerSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        request_body=UpdateCustomerSerializer,
+        responses={200: UpdateCustomerSerializer()},
+        security=[{'Bearer': []}]
+    )
+    def put(self, request):
+        serializer = UpdateCustomerSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class TechnicianProfileView(APIView):
+    permission_classes = [IsAuthenticated, IsTechnician]
+
+    @swagger_auto_schema(
+        responses={200: TechnicianSerializer()},
+        security=[{'Bearer': []}] 
+    )
+    def get(self, request):
+        try:
+            serializer = TechnicianSerializer(request.user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except TechnicianProfile.DoesNotExist:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    @swagger_auto_schema(
+        request_body=UpdateTechnicianSerializer, 
+        responses={200: TechnicianSerializer()},
+        security=[{'Bearer': []}]
+
+    )
+    def put(self, request):
+        try:
+            serializer = UpdateTechnicianSerializer(request.user, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                new_user = User.objects.get(id=request.user.id)
+                serializer = TechnicianSerializer(new_user)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except TechnicianProfile.DoesNotExist:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
@@ -81,3 +157,16 @@ class LogoutView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+class DeleteAccountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        responses={200: openapi.Response("Account deleted successfully")}
+    )
+    def delete(self, request):
+        """Delete the authenticated user's account"""
+        user = request.user
+        user.delete()
+        return Response({"message": "Account deleted successfully"}, status=status.HTTP_200_OK)
+
