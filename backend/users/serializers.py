@@ -1,4 +1,5 @@
-from .models import TechnicianProfile
+from users.utils import send_verification_email
+from .models import EmailVerificationToken, TechnicianProfile
 from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework import serializers
@@ -7,13 +8,16 @@ from .models import User
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("id", "username", "phone_number", "address", "email", "role", "password")
+        fields = ("id", "username", "phone_number", "address", "email", "role", "password", "is_verified")
         extra_kwargs = {
             "password": {"write_only": True},
+            "is_verified": {"read_only": True}
         }
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
+        send_verification_email(user) 
+
         return user
 
 class TechnicianProfileSerializer(serializers.ModelSerializer):
@@ -33,6 +37,9 @@ class TechnicianSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         technician_data = validated_data.pop("technician_profile", None) 
         user = User.objects.create_user(**validated_data)
+        token = EmailVerificationToken.objects.create(user=user)
+        send_verification_email(user) 
+
         TechnicianProfile.objects.create(user=user, **technician_data)
 
         return user

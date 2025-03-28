@@ -2,4 +2,9 @@ django
 djangorestframework
 djangorestframework-simplejwt
 drf-yasg
-"rest_framework_simplejwt.token_blacklist"]
+"rest_framework_simplejwt.token_blacklist"
+django-environ
+
+google-auth 
+google-auth-oauthlib 
+google-auth-httplib2

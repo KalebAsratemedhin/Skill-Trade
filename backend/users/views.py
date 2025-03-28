@@ -1,3 +1,4 @@
+from users.utils import send_verification_email
 from users.permissions import IsCustomer, IsTechnician
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -8,8 +9,7 @@ from django.contrib.auth import login, logout
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
-from .models import User, TechnicianProfile
-
+from .models import EmailVerificationToken, User, TechnicianProfile
 class RegisterCustomerView(APIView):
     permission_classes = [AllowAny]
 
@@ -48,7 +48,6 @@ class RegisterTechnicianView(APIView):
                 "access": str(refresh.access_token),
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -68,7 +67,6 @@ class LoginView(APIView):
                 "access": str(refresh.access_token),
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 class GetTechnicianByIdView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -96,7 +94,6 @@ class GetAllTechniciansView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except TechnicianProfile.DoesNotExist:
             return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
-        
 class CurrentTechnicianProfileView(APIView):
     permission_classes = [IsAuthenticated, IsTechnician]
 
@@ -194,3 +191,28 @@ class DeleteAccountView(APIView):
         user.delete()
         return Response({"message": "Account deleted successfully"}, status=status.HTTP_200_OK)
 
+class VerifyEmailView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, token):
+        try:
+            verification_token = EmailVerificationToken.objects.get(token=token)
+
+            if verification_token.is_expired():
+                return Response("Verification link expired", status=400)
+
+            user = verification_token.user
+            user.is_verified = True 
+            user.save()
+            verification_token.delete()
+            return Response("Email verified successfully", status=200)
+
+        except EmailVerificationToken.DoesNotExist:
+            return Response("Invalid verification link", status=400)
+
+class ResendEmailVerificationView(APIView):
+    permission_classes = [AllowAny]
+    def post(self, request):
+        user = request.user
+        send_verification_email(user)
+        return Response("Verification email sent successfully", status=200)
