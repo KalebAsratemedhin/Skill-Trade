@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import SignUp from "@/pages/SignUp.vue";
 import SignIn from "@/pages/SignIn.vue";
-import Dashboard from "@/pages/Dashboard.vue";
+import Profile from "@/pages/Profile.vue";
 import { useAuthStore } from "../store/auth";
 
 
@@ -17,9 +17,9 @@ const routes = [
     component: SignIn 
 },
 { 
-  path: "/dashboard",
-  name: "dashboard",
-  component: Dashboard,
+  path: "/profile",
+  name: "profile",
+  component: Profile,
   meta: { requiresAuth: true } 
 },
 ];

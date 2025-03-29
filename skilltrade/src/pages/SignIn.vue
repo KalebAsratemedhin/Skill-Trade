@@ -81,7 +81,7 @@
 
         if (response) {
             snackbarRef.value.showSnackbar("User registered successfully!", "success");
-            router.push('/dashboard');
+            router.push('/profile');
         } else {
             snackbarRef.value.showSnackbar(authStore.error, "error");
         }

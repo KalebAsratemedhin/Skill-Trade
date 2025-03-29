@@ -1,5 +1,5 @@
 <template>
-    <nav class="flex items-center h-24 justify-between px-6 py-3 shadow-md bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
+    <nav class="flex items-center sticky top-0 z-50 w-full h-24 justify-between px-6 py-3 shadow-md bg-gradient-to-r from-indigo-600 to-purple-700 text-white">
       <button @click="toggleSidebar" class="md:hidden focus:outline-none">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>

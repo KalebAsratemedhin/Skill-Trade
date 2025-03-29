@@ -1,7 +1,7 @@
 <template>
   <div class="flex">
     <!-- <Sidebar v-if="authStore.isAuthenticated" /> -->
-    <div class="flex-1">
+    <div class="flex-1 w-full">
       <Navbar />
       <main class="p-4">
         <RouterView />
