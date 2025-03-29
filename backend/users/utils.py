@@ -9,4 +9,8 @@ def send_verification_email(user):
     message = f"Click the link below to verify your email:\n\n{verification_link}"
 
     print("sending email", token, settings.DEFAULT_FROM_EMAIL, user.email, settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
-    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
+    try:
+        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+    except Exception as e:
+        print("Error sending email", e)
+        return False

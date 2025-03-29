@@ -16,7 +16,6 @@ class CustomerSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
-        send_verification_email(user) 
 
         return user
 
@@ -37,8 +36,6 @@ class TechnicianSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         technician_data = validated_data.pop("technician_profile", None) 
         user = User.objects.create_user(**validated_data)
-        token = EmailVerificationToken.objects.create(user=user)
-        send_verification_email(user) 
 
         TechnicianProfile.objects.create(user=user, **technician_data)
 
