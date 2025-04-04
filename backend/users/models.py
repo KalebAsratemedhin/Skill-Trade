@@ -23,9 +23,9 @@ class User(AbstractUser):
     
 
 class TechnicianProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="technician_profile")
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="technicianprofile")
     expertise = models.CharField(max_length=255, blank=True, null=True)
-    experience_years = models.PositiveIntegerField(blank=True, null=True)
+    experience = models.PositiveIntegerField(blank=True, null=True)
     available = models.BooleanField(default=True)
 
 class EmailVerificationToken(models.Model):

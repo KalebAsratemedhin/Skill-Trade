@@ -5,64 +5,52 @@ from rest_framework import serializers
 from rest_framework import serializers
 from .models import User
 
-class CustomerSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
+    expertise = serializers.CharField(source="technicianprofile.expertise", required=False)
+    experience = serializers.IntegerField(source="technicianprofile.experience", required=False)
+    available = serializers.BooleanField(source="technicianprofile.available", required=False)
+
     class Meta:
         model = User
-        fields = ("id", "username", "phone_number", "address", "email", "role", "password", "is_verified")
+        fields = ("id", "username", "phone_number", "address", "email", "role", "password", "is_verified", "experience", "expertise", "available")
+
         extra_kwargs = {
             "password": {"write_only": True},
             "is_verified": {"read_only": True}
         }
 
     def create(self, validated_data):
+        technician_data = validated_data.pop("technicianprofile")
         user = User.objects.create_user(**validated_data)
+
+        if user.role == "technician":
+            TechnicianProfile.objects.create(user=user, **technician_data)
 
         return user
 
-class TechnicianProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TechnicianProfile
-        fields = ("expertise", "experience_years", "available")
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return {key: value for key, value in data.items() if value is not None}
 
-class TechnicianSerializer(serializers.ModelSerializer):
-    technician_profile = TechnicianProfileSerializer(required=False)
-    class Meta:
-        model = User
-        fields = ("id", "username", "phone_number", "address", "email", "role", "password", "technician_profile")
-        extra_kwargs = {
-            "password": {"write_only": True},
-        }
+class UpdateUserSerializer(serializers.ModelSerializer):
+    expertise = serializers.CharField(source="technicianprofile.expertise", required=False)
+    experience = serializers.IntegerField(source="technicianprofile.experience", required=False)
+    available = serializers.BooleanField(source="technicianprofile.available", required=False)
 
-    def create(self, validated_data):
-        technician_data = validated_data.pop("technician_profile", None) 
-        user = User.objects.create_user(**validated_data)
-
-        TechnicianProfile.objects.create(user=user, **technician_data)
-
-        return user
-    
-    
-
-
-class UpdateCustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("phone_number", "address")
-
-class UpdateTechnicianSerializer(serializers.ModelSerializer):
-    technician_profile = TechnicianProfileSerializer(required=False)
-    class Meta:
-        model = User
-        fields = ("phone_number", "address", "technician_profile")
+        fields = ("phone_number", "address", "experience", "expertise", "available")
 
     def update(self, instance, validated_data):
-        technician_data = validated_data.pop("technician_profile", None)
+        technician_data = validated_data.pop("technicianprofile")
+
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        TechnicianProfile.objects.update_or_create(user=instance, defaults=technician_data or {})
+        if instance.role == "technician":
+            TechnicianProfile.objects.update_or_create(user=instance, defaults=technician_data or {})
 
         return instance
 
